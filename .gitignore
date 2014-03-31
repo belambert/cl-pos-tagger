@@ -1,0 +1,11 @@
+data
+
+^doc/.*\.html
+^doc/.*\.html
+^doc/TODO\.txt
+^doc/FIXME\.txt
+^doc/*\.pdf
+
+.*\.pos.model
+
+^stanford-postagger.*
