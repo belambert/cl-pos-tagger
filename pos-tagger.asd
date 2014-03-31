@@ -1,8 +1,5 @@
-;;-*- Mode: Lisp -*- 
-;;; Copyright Benjamin E. Lambert, 2005-2011
-;;; All rights reserved
-;;; Please contact author regarding licensing and use:
-;;; ben@benjaminlambert.com
+;;;; -*- Mode: Lisp -*- 
+;;;; Benjamin E. Lambert (ben@benjaminlambert.com)
 
 (defsystem "pos-tagger"
   :description "Basic HMM-based POS tagger"
