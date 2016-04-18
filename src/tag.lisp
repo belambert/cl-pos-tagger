@@ -1,7 +1,4 @@
-;;; Copyright Benjamin E. Lambert, 2005-2011
-;;; All rights reserved
-;;; Please contact author regarding licensing and use:
-;;; ben@benjaminlambert.com
+;;;; Ben Lambert (ben@benjaminlambert.com)
 
 (declaim (optimize (debug 3)))
 (in-package :pos-tagger)
@@ -81,8 +78,6 @@
 	 for cumulative-score = (aref scores (1- word-count) i)
 	 for prev-tag-id = (aref back-pointers (1- word-count) i)
 	 for history = (list (get-tag prev-tag-id model) tag)
-	 ;;for last-score = (log (p-hat-interpolated (append history (list :|<\s>|)) model))
-	 ;;for last-score = (log (p-hat-interpolated prev-tag-id i :|<\\s>| model))
 	 for last-score = (if prev-tag-id
 			      (log (p-hat-interpolated prev-tag-id i (get-tag-id :|</s>| model) model))
 			      sb-ext:single-float-negative-infinity)
@@ -99,9 +94,7 @@
 	(sentence-count 0)
 	(start-time (get-universal-time)))
     (do-lines (line filename)
-      (let* (;;(words (line->pos-token-list line :add-sentence-boundaries nil :substitute-numbers (if (get-word-id "##NUMBER##") "##NUMBER##" nil)))
-	     ;;(words (split-sequence:split-sequence #\Space line))
-	     (words (if (get-word-id "##NUMBER##" *pos-model*)
+      (let* ((words (if (get-word-id "##NUMBER##" *pos-model*)
 			(mapcar (lambda (x) (if (number-string-p x) "##NUMBER##" x)) (split-sequence:split-sequence #\Space line))
 			(split-sequence:split-sequence #\Space line)))
 	     (tags (tag-sentence-viterbi-initial words))

@@ -1,18 +1,18 @@
-;;; Copyright Benjamin E. Lambert, 2005-2011
-;;; All rights reserved
-;;; Please contact author regarding licensing and use:
-;;; ben@benjaminlambert.com
+;;;; Ben Lambert (ben@benjaminlambert.com)
 
 (declaim (optimize (debug 3)))
 (in-package :pos-tagger)
-(cl-user::file-summary "Training a POS tagger...")
 
 (defun count-history (tags table n)
+  "Given a list of tags, a count table, and a window size (n),
+   count tag n-grams and increment the count table."
   (loop for i from 0 below (- (length tags) n)
      for history = (subseq tags i (+ i n)) do
        (incf (gethash history table 0))))
 
 (defun count-words (tokens table)
+  "Given a list of tokens (i.e. word tag pairs), and a count table, increment the
+   counts in the table for each word-tag pair."
   (loop for word-tag-pair in tokens do
        (incf (gethash word-tag-pair table 0))))
 
@@ -29,6 +29,7 @@
     tokens))
 
 (defun compute-interpolation-weights (model)
+  "Compute the best interpolation weights for the model."
   (let ((lambda1 0) (lambda2 0) (lambda3 0))
     (loop for t0 from 0 below (pos-model-tag-count model) do           ;; 
 	 (loop for t-1 from 1 below (pos-model-tag-count model) do      ;;
@@ -65,6 +66,9 @@
     (values lambda1 lambda2 lambda3)))
 
 (defun count-table->count-array (table n tag-table tag-count)
+  "Creates an n-dimensional array of the tag counts, so that we can access them
+   very fast.  If it's a 3-gram model, with  50 tags, then we createa a 50x50x50
+   count array."
   (let* ((dimensions (make-list n :initial-element tag-count))
 	 (array (make-array dimensions :initial-element 0 :element-type 'fixnum)))
     (loop for key being the hash-keys of table
@@ -74,6 +78,9 @@
     array))
 
 (defun lex-table->lex-array (table tag-table tag-count vocab-table vocab-count)
+  "Given a lexical count table, convert it to a count array for fast access.  This creates
+   a 2d array for pairs of words and tags.  The final table... for 50 tags, and 100k words
+   would be an array with dimensions 50x100k."
   (let* ((array (make-array (list vocab-count tag-count) :initial-element 0 :element-type 'fixnum)))
     (loop for key being the hash-keys of table
        for count = (gethash key table)
@@ -83,6 +90,8 @@
     array))
 
 (defun train-model (filename)
+  "Given a filename of a POS tagged file, read in the file, compute all the counts,
+   and create a model object."
   (let ((lex-counts (make-hash-table :test 'equalp))
 	(1gram-counts (make-hash-table :test 'equalp))
 	(2gram-counts (make-hash-table :test 'equalp))
@@ -90,21 +99,24 @@
 	(total-count 0)
 	(tag-table (make-hash-table :test 'equalp))
 	(word-table (make-hash-table :test 'equalp)))
+    ;; Do all the counting
     (do-lines (line filename)
-      (let* ((tokens (line->pos-token-list line))
-	     (tag-seq nil))
-	(setf tokens (remove-if (lambda (x) (or (string-equal (first x) "") (string-equal (second x) ""))) tokens))
-	(setf tag-seq (mapcar 'second tokens))
-	(assert (every 'identity tag-seq))
-	(assert (every (lambda (x) (or (keywordp x) (> (length x) 0))) tag-seq))
-	(incf total-count (length tokens))
-	(count-history tag-seq 1gram-counts 1)
-	(count-history tag-seq 2gram-counts 2)
-	(count-history tag-seq 3gram-counts 3)
-	(count-words tokens lex-counts)
-	(loop for (word tag) in tokens do	     
-	     (incf (gethash tag tag-table 0))
-	     (incf (gethash word word-table 0)))))
+      (unless (string-equal line "")
+	(let* ((tokens (line->pos-token-list line))
+	       (tag-seq nil))
+	  (setf tokens (remove-if (lambda (x) (or (string-equal (first x) "") (string-equal (second x) ""))) tokens))
+	  (setf tag-seq (mapcar 'second tokens))
+	  (assert (every 'identity tag-seq))
+	  (assert (every (lambda (x) (or (keywordp x) (> (length x) 0))) tag-seq))
+	  (incf total-count (length tokens))
+	  (count-history tag-seq 1gram-counts 1)
+	  (count-history tag-seq 2gram-counts 2)
+	  (count-history tag-seq 3gram-counts 3)
+	  (count-words tokens lex-counts)
+	  (loop for (word tag) in tokens do	     
+	       (incf (gethash tag tag-table 0))
+	       (incf (gethash word word-table 0))))))
+    ;; Build the actual POS model
     (let* ((tags (sort (alexandria:hash-table-keys tag-table) 'string-lessp))
 	   (tag-table (bl::seq->index-table tags))
 	   (tag-count (length tags))
@@ -127,11 +139,13 @@
       (setf *pos-model* model)
       model)))
 
-(defun save-model (filename)
-  (cl-store:store *pos-model* filename))
+(defun save-model (model filename)
+  "Save the given model to a filename using the package CL-STORE"
+  (cl-store:store model filename))
 
 (defun load-model (filename)
-  (setf *pos-model* (cl-store:restore filename)))
+   "Load the model in the given filename and return. Model must have been saved in CL-STORE format."
+  (cl-store:restore filename))
 
 
 	

@@ -1,14 +1,11 @@
-;;; Copyright Benjamin E. Lambert, 2005-2011
-;;; All rights reserved
-;;; Please contact author regarding licensing and use:
-;;; ben@benjaminlambert.com
+;;;; Ben Lambert (ben@benjaminlambert.com)
 
 (declaim (optimize (debug 3)))
 (in-package :pos-tagger)
 (cl-user::file-summary "Evaluating POS taggings")
 
-
 (defun print-confusion-matrix (matrix)
+  "Given a matrix of confusions, print it readably."
   (write-string "     ")
   (loop for y from 0 below (pos-model-tag-count *pos-model*) do
        (format t "~5@A" (get-tag y *pos-model*)))
@@ -19,14 +16,12 @@
 	  for count = (aref matrix x y) do
 	    (if (< count 10000)
 		(format t "~4D " (aref matrix x y))		
-		;;(format t "~4,1e " (aref matrix x y))
-		;;(format t "~4,1,,,,,e " (aref matrix x y))
-		(format t "~4,1,,,'*,,e " (aref matrix x y))
-		)
-	    )
+		(format t "~4,1,,,'*,,e " (aref matrix x y))))
        (terpri)))
 
 (defun simplify-pos (pos)
+  "Map Penn Treebank POS tags for various forms of noun, adjective,
+   verb, and adverb to a single tag for each of the four categories."
   (case pos
     ((:NN :NNS :NNP :NNPS) :NN)
     ((:VB :VBD :VBG :VBN :VBP :VBZ) :VB)
@@ -35,9 +30,11 @@
     (otherwise pos)))
 
 (defun simplify-sentence-pos (tokens)
+  "Given a tagged sentence, convert the tags to the simplified version."
   (mapcar (lambda (x) (list (first x) (simplify-pos (second x)))) tokens))
 
 (defun evaluate (hyp-file ref-file &key model (print-instances nil) (print-words nil) (print-predictions t) (simplify-pos nil) (print-singleton-words nil) (print-confusion-matrix nil))
+  "Huge gnarly function for printing out a POS tagger evaluation."
   (when model
     (load-model model))
   (let ((correct-table (make-array (list (pos-model-tag-count *pos-model*) (pos-model-tag-count *pos-model*)) :initial-element 0))
@@ -86,9 +83,7 @@
 		  (if (in-vocab-p ref-word)
 		      (incf in-vocab-count)
 		      (incf out-vocab-count))
-
 		  (incf (aref matrix ref-id hyp-id))
-
 		  (if (equal ref-tag hyp-tag)
 		      ;; CORRECT
 		      (progn
@@ -145,8 +140,7 @@
   (format t "Sentence count:         ~:D~%" sentence-count)
   (format t "Accuracy:               ~,2,2f % (~:D / ~:D)~%" (/ correct-count total-count) correct-count total-count)
   (format t "In vocab accuracy:      ~,2,2f % (~:D / ~:D)~%" (/ in-vocab-correct-count in-vocab-count) in-vocab-correct-count in-vocab-count)
-  (format t "Out of vocab accuracy:  ~,2,2f % (~:D / ~:D)~%" (/ out-vocab-correct-count out-vocab-count) out-vocab-correct-count out-vocab-count)
-  ))
+  (format t "Out of vocab accuracy:  ~,2,2f % (~:D / ~:D)~%" (/ out-vocab-correct-count out-vocab-count) out-vocab-correct-count out-vocab-count)))
 		      
 
 

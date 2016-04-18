@@ -1,11 +1,9 @@
-;;; Copyright Benjamin E. Lambert, 2005-2011
-;;; All rights reserved
-;;; Please contact author regarding licensing and use:
-;;; ben@benjaminlambert.com
+;;;; Ben Lambert (ben@benjaminlambert.com)
 
 (declaim (optimize (debug 3)))
 (in-package :pos-tagger)
-(cl-user::file-summary "Training a POS tagger...")
+
+(cl-user::file-summary "CLOS class representing a POS model.")
 
 (pushnew :pos-tagger *features*)
 
@@ -21,19 +19,22 @@
    (2gram-counts :initarg :2gram-counts :reader pos-model-2gram-counts)
    (3gram-counts :initarg :3gram-counts :reader pos-model-3gram-counts)
 
+   ;; The tags, their counts, and tables
    (token-count :initarg :token-count :reader pos-model-token-count)
    (tag-set :initarg :tag-set :reader pos-model-tag-set)
    (tag-count :initarg :tag-count :reader pos-model-tag-count)
-
+   (tag-table :initarg :tag-table :reader pos-model-tag-table)
+   
+   ;; We use this table to map from words to indicies
    (vocab-size :initarg :vocab-size :reader pos-model-vocab-size)
    (vocab :initarg :vocab :reader pos-model-vocab)
    (vocab-table :initarg :vocab-table :reader pos-model-vocab-table)
 
    (lambda1 :initarg :lambda1 :accessor pos-model-lambda1)
    (lambda2 :initarg :lambda2 :accessor pos-model-lambda2)
-   (lambda3 :initarg :lambda3 :accessor pos-model-lambda3)
-   (tag-table :initarg :tag-table :reader pos-model-tag-table)))
+   (lambda3 :initarg :lambda3 :accessor pos-model-lambda3)))
 
+;;;; GENERIC METHODS... 
 (defgeneric p-hat-1gram (tag pos-model))
 (defgeneric p-hat-2gram (tag tag-1 pos-model))
 (defgeneric p-hat-3gram (tag tag-1 tag-2 pos-model))
@@ -41,35 +42,39 @@
 (defgeneric p-hat-lexical (word tag pos-model &key smoothing-param))
 (defgeneric p-hat-model (word tag tag-1 tag-2 pos-model))
 (defgeneric log-p-hat-model (word tag tag-1 tag-2 pos-model))
-
 (defgeneric get-pos-tag-prob-array (word history pos-model &key array))
 (defgeneric get-tag-id (tag pos-model))
 (defgeneric tag-word (word history pos-model))
-
 (defgeneric get-tag (tag pos-model))
 (defgeneric get-word (word pos-model))
 
 (defun number-string-p (string)
+  "Check if the string is composed entirely of numeric characters, and common, period, and hyphen."
   (every (lambda (x) (or (digit-char-p x) (char-equal x #\,) (char-equal x #\.)  (char-equal x #\-))) string))
 
 (defmethod get-tag-id (tag (model pos-model))
+  "Given a tag, get its numerical ID. e.g. (get-tag-id :NN) --> 3"
   (gethash tag (pos-model-tag-table model)))
 
 (defmethod get-word-id (word (model pos-model))
+  "Given a word, get its numerical ID. e.g. (get-word-id 'the') --> 15"
   (gethash word (pos-model-vocab-table model)))
 
 (defmethod get-tag (id (model pos-model))
+  "Given a numerical tag ID, get the tag. e.g. (get-tag 3) --> :NN"
   (if (numberp id)
       (aref (pos-model-tag-set model) id)
       nil))
 
 (defmethod get-word (id (model pos-model))
+  "Given a numerical word ID, get the word. e.g. (get-word 15) --> 'the'"
   (if (numberp id)
       (aref (pos-model-vocab model) id)
       nil))
 
-(defun in-vocab-p (word)
-  (gethash word (pos-model-vocab-table *pos-model*)))
+(defun in-vocab-p (word model)
+  "Predicate, returns true iff the word is in the model vocab."
+  (gethash word (pos-model-vocab-table model)))
 
 (defmethod p-hat-1gram (tag (model pos-model))
   (declare (optimize (speed 3))
@@ -103,18 +108,8 @@
 (defmethod p-hat-3gram (tag tag-1 tag-2 (model pos-model))
   (declare (optimize (speed 3))
 	   ((or fixnum keyword) tag tag-1 tag-2))
-  ;; (unless (numberp tag)
-  ;;   (setf tag (get-tag-id tag model)))
-  ;; (unless (numberp tag-1)
-  ;;   (setf tag-1 (get-tag-id tag-1 model)))
-  ;; (unless (numberp tag-2)
-  ;;   (setf tag-2 (get-tag-id tag-2 model)))
-
-  (let (;;(n (aref (the (simple-array fixnum) (pos-model-3gram-counts model)) tag tag-1 tag-2))
-	;;(d (aref (the (simple-array fixnum) (pos-model-2gram-counts model)) tag-1 tag-2))
-	(n (aref (the (simple-array fixnum) (pos-model-3gram-counts model)) tag-2 tag-1 tag))
-	(d (aref (the (simple-array fixnum) (pos-model-2gram-counts model)) tag-2 tag-1))
-	)
+  (let ((n (aref (the (simple-array fixnum) (pos-model-3gram-counts model)) tag-2 tag-1 tag))
+	(d (aref (the (simple-array fixnum) (pos-model-2gram-counts model)) tag-2 tag-1)))
     (declare (fixnum n d))
     (if (zerop d)
 	0.0
@@ -150,24 +145,16 @@
     lex-prob))
 
 (defmethod p-hat-model (word tag tag-1 tag-2 (model pos-model))
-  ;;(declare (optimize (speed 3)))
   (let ((tag-prob (p-hat-interpolated tag tag-1 tag-2 model))
 	(lex-prob (p-hat-lexical word tag model)))
     (declare (single-float tag-prob lex-prob))
-    ;;(assert (not (zerop tag-prob)))
-    ;;(assert (not (zerop lex-prob)))
     (* tag-prob lex-prob)))
 
 (defmethod log-p-hat-model (word tag tag-1 tag-2 (model pos-model))
-  ;;(declare (optimize (speed 3)))
-  ;;(log (the (single-float (0.0) *) (p-hat-model word tag tag-1 tag-2 model)))
-  ;;(format t "~A ~A ~A ~A~%" (get-word word model) (get-tag tag model) (get-tag tag-1 model) (get-tag tag-2 model))
   (let ((prob (p-hat-model word tag tag-1 tag-2 model)))
-    ;;(pprint prob)
     (if (zerop prob)
 	sb-ext:single-float-negative-infinity
-	(log prob)
-	)))
+	(log prob))))
 
 ;; We're probably not really using these... right?
 (defmethod tag-word (word history (model pos-model))
