@@ -1,10 +1,7 @@
-;;;; Ben Lambert (ben@benjaminlambert.com)
+;;;; Author: Ben Lambert
+;;;; ben@benjaminlambert.com
 
-(declaim (optimize (debug 3)))
 (in-package :pos-tagger)
-
-(cl-user::file-summary "CLOS class representing a POS model.")
-
 (pushnew :pos-tagger *features*)
 
 (defvar *pos-model* nil)
@@ -14,27 +11,23 @@
    (history-probs)
    (lex-counts :initarg :lex-counts :reader pos-model-lex-counts)
    (history-counts :initarg :history-counts :reader pos-model-history-counts)
-
    (1gram-counts :initarg :1gram-counts :reader pos-model-1gram-counts :type (simple-array fixnum))
    (2gram-counts :initarg :2gram-counts :reader pos-model-2gram-counts)
    (3gram-counts :initarg :3gram-counts :reader pos-model-3gram-counts)
-
    ;; The tags, their counts, and tables
    (token-count :initarg :token-count :reader pos-model-token-count)
    (tag-set :initarg :tag-set :reader pos-model-tag-set)
    (tag-count :initarg :tag-count :reader pos-model-tag-count)
    (tag-table :initarg :tag-table :reader pos-model-tag-table)
-   
    ;; We use this table to map from words to indicies
    (vocab-size :initarg :vocab-size :reader pos-model-vocab-size)
    (vocab :initarg :vocab :reader pos-model-vocab)
    (vocab-table :initarg :vocab-table :reader pos-model-vocab-table)
-
    (lambda1 :initarg :lambda1 :accessor pos-model-lambda1)
    (lambda2 :initarg :lambda2 :accessor pos-model-lambda2)
    (lambda3 :initarg :lambda3 :accessor pos-model-lambda3)))
 
-;;;; GENERIC METHODS... 
+;;;; Generic methods
 (defgeneric p-hat-1gram (tag pos-model))
 (defgeneric p-hat-2gram (tag tag-1 pos-model))
 (defgeneric p-hat-3gram (tag tag-1 tag-2 pos-model))
@@ -79,8 +72,6 @@
 (defmethod p-hat-1gram (tag (model pos-model))
   (declare (optimize (speed 3))
 	   ((or fixnum keyword) tag))
-  ;; (unless (numberp tag)
-  ;;   (setf tag (get-tag-id tag model)))
   (let ((n (aref (the (simple-array fixnum) (pos-model-1gram-counts model)) tag))
 	(d (pos-model-token-count model)))
     (declare (fixnum n d))
@@ -91,14 +82,7 @@
 (defmethod p-hat-2gram (tag tag-1 (model pos-model))
   (declare (optimize (speed 3))
 	   ((or fixnum keyword) tag tag-1))
-
-  ;; (unless (numberp tag)
-  ;;   (setf tag (get-tag-id tag model)))
-  ;; (unless (numberp tag-1)
-  ;;   (setf tag-1 (get-tag-id tag-1 model)))
-
-  (let (;;(n (aref (the (simple-array fixnum) (pos-model-2gram-counts model)) tag tag-1))
-	(n (aref (the (simple-array fixnum) (pos-model-2gram-counts model)) tag-1 tag))
+  (let ((n (aref (the (simple-array fixnum) (pos-model-2gram-counts model)) tag-1 tag))
 	(d (aref (the (simple-array fixnum) (pos-model-1gram-counts model)) tag-1)))
     (declare (fixnum n d))
     (if (zerop d)
@@ -133,7 +117,7 @@
   (let ((n (if word      ;;; # of times we saw this word with this tag
 	       (coerce (the fixnum (aref (the (simple-array fixnum) (pos-model-lex-counts model)) word tag)) 'single-float)
 	       smoothing-param))
-	(d (coerce (aref (the (simple-array fixnum) (pos-model-1gram-counts model)) tag) 'single-float))   ;;; # of times we saw this tag...
+	(d (coerce (aref (the (simple-array fixnum) (pos-model-1gram-counts model)) tag) 'single-float))   ;;; # of times we saw this tag
 	(lex-prob 0.0))
     (declare (single-float n d lex-prob))
     (incf n smoothing-param)
@@ -156,7 +140,7 @@
 	sb-ext:single-float-negative-infinity
 	(log prob))))
 
-;; We're probably not really using these... right?
+;; We may not really using these
 (defmethod tag-word (word history (model pos-model))
   (let ((best-tag nil)
 	(best-prob 0.0))

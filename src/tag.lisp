@@ -1,8 +1,7 @@
-;;;; Ben Lambert (ben@benjaminlambert.com)
+;;;; Author: Ben Lambert
+;;;; ben@benjaminlambert.com
 
-(declaim (optimize (debug 3)))
 (in-package :pos-tagger)
-(cl-user::file-summary "Running a POS tagger...")
 
 (defun tag-sentence-string (string)
   (tag-sentence (split-sequence:split-sequence #\Space string)))
@@ -31,7 +30,6 @@
 	   (setf prev (aref bp-array i prev))
 	   (push prev path))
     (setf path (mapcar (lambda (x) (get-tag x model)) path))
-    ;;(format t "PATH:~{ ~A~}~%" path)
     path))
 
 (defun tag-sentence-viterbi-initial (words)
@@ -88,7 +86,6 @@
 	     (setf best-last-tag i)))
       (follow-back-pointers back-pointers best-last-tag model))))
 
-
 (defun tag-file (filename &key (separator #\_))
   (let ((total-word-count 0)
 	(sentence-count 0)
@@ -110,8 +107,7 @@
 	(terpri)))    
     (let* ((end-time (get-universal-time))
 	   (total-time (- end-time start-time)))
-      (format *error-output* "Tagged ~:D sentences, ~:D words, in ~,2f seconds (~,2f words / second)~%" sentence-count total-word-count total-time (/ total-word-count total-time))
-      )))
+      (format *error-output* "Tagged ~:D sentences, ~:D words, in ~,2f seconds (~,2f words / second)~%" sentence-count total-word-count total-time (/ total-word-count total-time)))))
 
 (defun viterbi-one-step (word scores back-pointers prev-scores prev-back-pointers)
   (let* ((model *pos-model*)

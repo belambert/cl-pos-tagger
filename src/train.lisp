@@ -1,6 +1,6 @@
-;;;; Ben Lambert (ben@benjaminlambert.com)
+;;;; Author: Ben Lambert
+;;;; ben@benjaminlambert.com
 
-(declaim (optimize (debug 3)))
 (in-package :pos-tagger)
 
 (defun count-history (tags table n)
@@ -31,15 +31,14 @@
 (defun compute-interpolation-weights (model)
   "Compute the best interpolation weights for the model."
   (let ((lambda1 0) (lambda2 0) (lambda3 0))
-    (loop for t0 from 0 below (pos-model-tag-count model) do           ;; 
-	 (loop for t-1 from 1 below (pos-model-tag-count model) do      ;;
-	      (loop for t-2 from 2 below (pos-model-tag-count model) do		   
+    (loop for t0 from 0 below (pos-model-tag-count model) do
+	 (loop for t-1 from 1 below (pos-model-tag-count model) do
+	      (loop for t-2 from 2 below (pos-model-tag-count model) do
 		   (let* ((count-t1-t2-t3 (aref (pos-model-3gram-counts model) t-2 t-1 t0))
 			  (count-t1-t2 (aref (pos-model-2gram-counts model) t-2 t-1))
 			  (count-t2-t3 (aref (pos-model-2gram-counts model) t-1 t0))
 			  (count-t2 (aref (pos-model-1gram-counts model) t-1))
 			  (count-t3 (aref (pos-model-1gram-counts model) t0))
-
 			  (n (pos-model-token-count model))
 			  (3gram-prob (if (= (1- count-t1-t2) 0)
 					  0.0

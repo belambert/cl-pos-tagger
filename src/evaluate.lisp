@@ -1,8 +1,7 @@
-;;;; Ben Lambert (ben@benjaminlambert.com)
+;;;; Author: Ben Lambert
+;;;; ben@benjaminlambert.com
 
-(declaim (optimize (debug 3)))
 (in-package :pos-tagger)
-(cl-user::file-summary "Evaluating POS taggings")
 
 (defun print-confusion-matrix (matrix)
   "Given a matrix of confusions, print it readably."
@@ -132,7 +131,6 @@
 		   word count (gethash word word-counts-correct 0) (gethash word word-counts)
 		   (list->count-list (gethash word mistakes-shoulda-been))
 		   (when print-predictions (list->count-list (gethash word mistakes)))))))
-
   ;; Print conf matrix:
   (when print-confusion-matrix
     (print-confusion-matrix matrix))
@@ -141,11 +139,3 @@
   (format t "Accuracy:               ~,2,2f % (~:D / ~:D)~%" (/ correct-count total-count) correct-count total-count)
   (format t "In vocab accuracy:      ~,2,2f % (~:D / ~:D)~%" (/ in-vocab-correct-count in-vocab-count) in-vocab-correct-count in-vocab-count)
   (format t "Out of vocab accuracy:  ~,2,2f % (~:D / ~:D)~%" (/ out-vocab-correct-count out-vocab-count) out-vocab-correct-count out-vocab-count)))
-		      
-
-
-			
-
-
-
-

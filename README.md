@@ -8,9 +8,6 @@ It can be trained from training data.
 
 Uses Viterbi decoding... using 1-grams, 2-grams, and 3-grams.
 
-....
-
-
 
 Command line usage
 ------------------
@@ -31,19 +28,11 @@ TRAINING:
 (defvar *pos-model* (pos-tagger:train-model "/Users/bel/workspace/code/pos-tagger/misc/ptb-swb.pos-train.txt"))
 (pos-tagger:save-model *pos-model* "/Users/bel/pos-model.model")
 
-...
 
 TODO
 -----
-Make serialized models text readable...?
-
-
-
-Notes
------
-
- * ...
-
+- Make serialized models text readable
+- etc.
 
 
 
