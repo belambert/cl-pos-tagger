@@ -1,6 +1,5 @@
-============
 pos-tagger
-============
+==========
 
 This is an trigram HMM-based POS tagger for Lisp.
 
