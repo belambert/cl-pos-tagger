@@ -1,5 +1,3 @@
-;;;; Author: Ben Lambert
-;;;; ben@benjaminlambert.com
 
 (defpackage :pos-tagger-tests
   (:use :common-lisp :pos-tagger :lisp-unit))

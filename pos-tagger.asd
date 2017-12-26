@@ -1,11 +1,10 @@
 ;;;; -*- Mode: Lisp -*- 
-;;;; Benjamin E. Lambert (ben@benjaminlambert.com)
 
 (defsystem "pos-tagger"
   :description "Basic HMM-based POS tagger"
   :version "0.2.0"
-  :author "Benjamin Lambert"
-  :licence "All rights reserved"
+  :author "Ben Lambert"
+  :licence "Apache-2.0"
   :serial t
   :components
   ((:module src
@@ -16,4 +15,3 @@
 			 (:file "tag")
 			 (:file "evaluate"))))
   :depends-on (:blambert-util :cl-fad :split-sequence :alexandria :cl-store))
-
